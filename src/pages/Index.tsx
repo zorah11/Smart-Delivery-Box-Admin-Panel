@@ -1,14 +1,38 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import LoginScreen from '@/components/LoginScreen';
+import Dashboard from '@/components/Dashboard';
+import PINManagement from '@/components/PINManagement';
+import Notifications from '@/components/Notifications';
+import LockerManagement from '@/components/LockerManagement';
+import ActivityLogs from '@/components/ActivityLogs';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
-  );
+  const { user } = useAuth();
+  const [currentPage, setCurrentPage] = useState('dashboard');
+
+  if (!user) {
+    return <LoginScreen />;
+  }
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard onNavigate={setCurrentPage} />;
+      case 'pin-management':
+        return <PINManagement onNavigate={setCurrentPage} />;
+      case 'notifications':
+        return <Notifications onNavigate={setCurrentPage} />;
+      case 'locker-management':
+        return <LockerManagement onNavigate={setCurrentPage} />;
+      case 'activity-logs':
+        return <ActivityLogs onNavigate={setCurrentPage} />;
+      default:
+        return <Dashboard onNavigate={setCurrentPage} />;
+    }
+  };
+
+  return renderPage();
 };
 
 export default Index;
