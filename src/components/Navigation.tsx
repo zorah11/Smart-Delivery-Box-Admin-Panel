@@ -35,35 +35,43 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onNavigate }) => {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-80">
-        <SheetHeader className="bg-primary text-primary-foreground p-4 -m-6 mb-6">
-          <SheetTitle className="text-primary-foreground">Smart Delivery Box</SheetTitle>
-        </SheetHeader>
+      <SheetContent side="left" className="w-80 p-0">
+        <div className="bg-primary text-primary-foreground p-6">
+          <SheetTitle className="text-primary-foreground text-xl font-bold">
+            Smart Delivery Box
+          </SheetTitle>
+          <p className="text-primary-foreground/80 text-sm mt-1">Admin Panel</p>
+        </div>
         
-        <nav className="space-y-2">
+        <nav className="p-4 space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = currentPage === item.id;
             return (
               <Button
                 key={item.id}
-                variant={currentPage === item.id ? "default" : "ghost"}
-                className="w-full justify-start"
+                variant={isActive ? "default" : "ghost"}
+                className={`w-full justify-start h-12 ${
+                  isActive 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                }`}
                 onClick={() => onNavigate(item.id)}
               >
-                <Icon className="mr-2 h-4 w-4" />
-                {item.label}
+                <Icon className="mr-3 h-5 w-5" />
+                <span className="font-medium">{item.label}</span>
               </Button>
             );
           })}
           
-          <div className="pt-4 border-t">
+          <div className="pt-6 border-t border-border mt-6">
             <Button
               variant="ghost"
-              className="w-full justify-start text-destructive hover:text-destructive"
+              className="w-full justify-start h-12 text-destructive hover:text-destructive hover:bg-destructive/10"
               onClick={logout}
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              <LogOut className="mr-3 h-5 w-5" />
+              <span className="font-medium">Logout</span>
             </Button>
           </div>
         </nav>
