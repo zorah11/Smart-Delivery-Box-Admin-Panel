@@ -1,14 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { 
   CheckCircle, 
-  AlertTriangle, 
   Clock, 
   RefreshCw,
   Key,
-  Unlock,
   Package,
   Shield,
   Activity,
@@ -23,58 +20,14 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const { lockerStatus, activityLogs, orders } = useAdmin();
+  const { activityLogs, orders } = useAdmin();
   const { toast } = useToast();
-
-  const getStatusIcon = () => {
-    switch (lockerStatus.status) {
-      case 'occupied':
-        return <CheckCircle className="h-6 w-6 text-success" />;
-      case 'empty':
-        return <CheckCircle className="h-6 w-6 text-success" />;
-      case 'tampered':
-        return <AlertTriangle className="h-6 w-6 text-destructive" />;
-      default:
-        return <CheckCircle className="h-6 w-6 text-success" />;
-    }
-  };
-
-  const getStatusText = () => {
-    switch (lockerStatus.status) {
-      case 'occupied':
-        return 'Occupied';
-      case 'empty':
-        return 'Empty';
-      case 'tampered':
-        return 'Tampered';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (lockerStatus.status) {
-      case 'occupied':
-        return 'bg-success';
-      case 'empty':
-        return 'bg-success';
-      case 'tampered':
-        return 'bg-destructive';
-      default:
-        return 'bg-muted';
-    }
-  };
 
   const recentActivities = activityLogs.slice(0, 3);
 
   const handleQuickAction = (action: string) => {
     if (action === 'generate-pin') {
       onNavigate('pin-management');
-    } else if (action === 'open-locker') {
-      toast({
-        title: "Locker Opened",
-        description: "Locker has been opened successfully.",
-      });
     }
   };
 
@@ -123,18 +76,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-warning">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Locker Status</p>
-                  <p className="text-lg font-semibold text-foreground capitalize">{lockerStatus.status}</p>
-                </div>
-                {getStatusIcon()}
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="border-l-4 border-l-accent">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -149,33 +90,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Locker Status Card */}
+          {/* Quick Actions and Activity */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-4">
               <CardTitle className="text-xl font-semibold flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                System Status
+                Quick Actions
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  {getStatusIcon()}
-                  <div>
-                    <p className="font-medium">Locker #1</p>
-                    <Badge variant="outline" className={getStatusColor()}>
-                      {getStatusText()}
-                    </Badge>
-                  </div>
-                </div>
-                {lockerStatus.assignedOrderId && (
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Assigned Order</p>
-                    <p className="font-medium">#{lockerStatus.assignedOrderId}</p>
-                  </div>
-                )}
-              </div>
-              
               <div className="grid grid-cols-2 gap-3">
                 <Button 
                   className="w-full h-12"
@@ -183,14 +106,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 >
                   <Key className="mr-2 h-4 w-4" />
                   Generate PIN
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full h-12"
-                  onClick={() => handleQuickAction('open-locker')}
-                >
-                  <Unlock className="mr-2 h-4 w-4" />
-                  Open Locker
                 </Button>
               </div>
             </CardContent>

@@ -4,7 +4,6 @@ import LoginScreen from '@/components/LoginScreen';
 import Dashboard from '@/components/Dashboard';
 import PINManagement from '@/components/PINManagement';
 import Notifications from '@/components/Notifications';
-import LockerManagement from '@/components/LockerManagement';
 import ActivityLogs from '@/components/ActivityLogs';
 
 const Index = () => {
@@ -23,8 +22,6 @@ const Index = () => {
         return <PINManagement onNavigate={setCurrentPage} />;
       case 'notifications':
         return <Notifications onNavigate={setCurrentPage} />;
-      case 'locker-management':
-        return <LockerManagement onNavigate={setCurrentPage} />;
       case 'activity-logs':
         return <ActivityLogs onNavigate={setCurrentPage} />;
       default:

@@ -31,24 +31,15 @@ interface ActivityLog {
   details: string;
 }
 
-interface LockerStatus {
-  id: string;
-  status: 'empty' | 'occupied' | 'tampered';
-  assignedOrderId?: string;
-}
-
 interface AdminContextType {
   orders: Order[];
   currentPIN: PIN | null;
   pinHistory: PIN[];
   notifications: Notification[];
   activityLogs: ActivityLog[];
-  lockerStatus: LockerStatus;
-  generatePIN: (orderId: string) => void;
+  generatePIN: (orderId: string) => PIN;
+  savePIN: (orderId: string, code: string) => PIN;
   resetPIN: () => void;
-  assignLocker: (orderId: string) => void;
-  openLocker: () => void;
-  closeLocker: () => void;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -68,11 +59,7 @@ interface AdminProviderProps {
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   // Mock data
   const [orders] = useState<Order[]>([
-    { id: '123', customerName: 'John Doe', description: 'Electronics', status: 'pending' },
-    { id: '124', customerName: 'Jane Smith', description: 'Books', status: 'pending' },
-    { id: '125', customerName: 'Bob Johnson', description: 'Clothing', status: 'assigned' },
-    { id: '126', customerName: 'Alice Brown', description: 'Home Goods', status: 'pending' },
-    { id: '127', customerName: 'Charlie Wilson', description: 'Sports Equipment', status: 'delivered' },
+    { id: '123', customerName: 'Abdul Swabul', description: 'Electronics', status: 'pending' }
   ]);
 
   const [currentPIN, setCurrentPIN] = useState<PIN | null>(null);
@@ -88,18 +75,11 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([
     { id: '1', action: 'PIN Generated', orderId: '123', timestamp: new Date('2025-08-24T08:00:00'), details: 'PIN 4839 generated for Order #123' },
     { id: '2', action: 'Package Delivered', orderId: '122', timestamp: new Date('2025-08-24T08:30:00'), details: 'Package delivered successfully' },
-    { id: '3', action: 'Locker Opened', timestamp: new Date('2025-08-24T09:00:00'), details: 'Locker opened by admin' },
     { id: '4', action: 'Tamper Alert', timestamp: new Date('2025-08-24T09:15:00'), details: 'Tamper attempt detected and logged' },
     { id: '5', action: 'PIN Reset', orderId: '123', timestamp: new Date('2025-08-24T10:30:00'), details: 'PIN reset for Order #123' },
   ]);
 
-  const [lockerStatus, setLockerStatus] = useState<LockerStatus>({
-    id: '1',
-    status: 'occupied',
-    assignedOrderId: '125'
-  });
-
-  const generatePIN = (orderId: string) => {
+  const generatePIN = (orderId: string): PIN => {
     const pin = Math.floor(1000 + Math.random() * 9000).toString();
     const expiryTime = new Date();
     expiryTime.setHours(expiryTime.getHours() + 24);
@@ -114,6 +94,24 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
     setCurrentPIN(newPIN);
     setPinHistory(prev => [newPIN, ...prev]);
+
+    // Persist to localStorage for later upload
+    try {
+      localStorage.setItem('currentPIN', JSON.stringify({
+        ...newPIN,
+        expiryTime: newPIN.expiryTime.toISOString(),
+        generatedAt: newPIN.generatedAt.toISOString(),
+      }));
+      const existing = JSON.parse(localStorage.getItem('pinHistory') || '[]');
+      const newHistory = [{
+        ...newPIN,
+        expiryTime: newPIN.expiryTime.toISOString(),
+        generatedAt: newPIN.generatedAt.toISOString(),
+      }, ...existing];
+      localStorage.setItem('pinHistory', JSON.stringify(newHistory));
+    } catch (e) {
+      // no-op if storage fails
+    }
 
     // Add to activity logs
     const logEntry: ActivityLog = {
@@ -134,11 +132,57 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       critical: false
     };
     setNotifications(prev => [notification, ...prev]);
+    return newPIN;
+  };
+
+  const savePIN = (orderId: string, code: string): PIN => {
+    const expiryTime = new Date();
+    expiryTime.setHours(expiryTime.getHours() + 24);
+
+    const newPIN: PIN = {
+      code,
+      orderId,
+      expiryTime,
+      used: false,
+      generatedAt: new Date()
+    };
+
+    setCurrentPIN(newPIN);
+    setPinHistory(prev => [newPIN, ...prev]);
+
+    try {
+      localStorage.setItem('currentPIN', JSON.stringify({
+        ...newPIN,
+        expiryTime: newPIN.expiryTime.toISOString(),
+        generatedAt: newPIN.generatedAt.toISOString(),
+      }));
+      const existing = JSON.parse(localStorage.getItem('pinHistory') || '[]');
+      const newHistory = [{
+        ...newPIN,
+        expiryTime: newPIN.expiryTime.toISOString(),
+        generatedAt: newPIN.generatedAt.toISOString(),
+      }, ...existing];
+      localStorage.setItem('pinHistory', JSON.stringify(newHistory));
+    } catch {}
+
+    const logEntry: ActivityLog = {
+      id: Date.now().toString(),
+      action: 'PIN Generated',
+      orderId,
+      timestamp: new Date(),
+      details: `PIN ${code} generated for Order #${orderId}`
+    };
+    setActivityLogs(prev => [logEntry, ...prev]);
+
+    return newPIN;
   };
 
   const resetPIN = () => {
     if (currentPIN) {
       setCurrentPIN(null);
+      try {
+        localStorage.removeItem('currentPIN');
+      } catch {}
       
       const logEntry: ActivityLog = {
         id: Date.now().toString(),
@@ -151,61 +195,15 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     }
   };
 
-  const assignLocker = (orderId: string) => {
-    setLockerStatus(prev => ({
-      ...prev,
-      status: 'occupied',
-      assignedOrderId: orderId
-    }));
-
-    const logEntry: ActivityLog = {
-      id: Date.now().toString(),
-      action: 'Locker Assigned',
-      orderId,
-      timestamp: new Date(),
-      details: `Locker assigned to Order #${orderId}`
-    };
-    setActivityLogs(prev => [logEntry, ...prev]);
-  };
-
-  const openLocker = () => {
-    const logEntry: ActivityLog = {
-      id: Date.now().toString(),
-      action: 'Locker Opened',
-      timestamp: new Date(),
-      details: 'Locker opened by admin'
-    };
-    setActivityLogs(prev => [logEntry, ...prev]);
-  };
-
-  const closeLocker = () => {
-    setLockerStatus(prev => ({
-      ...prev,
-      status: 'empty',
-      assignedOrderId: undefined
-    }));
-
-    const logEntry: ActivityLog = {
-      id: Date.now().toString(),
-      action: 'Locker Closed',
-      timestamp: new Date(),
-      details: 'Locker closed and cleared'
-    };
-    setActivityLogs(prev => [logEntry, ...prev]);
-  };
-
   const value = {
     orders,
     currentPIN,
     pinHistory,
     notifications,
     activityLogs,
-    lockerStatus,
     generatePIN,
+    savePIN,
     resetPIN,
-    assignLocker,
-    openLocker,
-    closeLocker
   };
 
   return (

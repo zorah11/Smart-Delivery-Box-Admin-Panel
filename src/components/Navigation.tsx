@@ -6,7 +6,6 @@ import {
   Home, 
   Lock, 
   Bell, 
-  Settings, 
   FileText, 
   LogOut 
 } from 'lucide-react';
@@ -24,7 +23,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onNavigate }) => {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'pin-management', label: 'PIN Management', icon: Lock },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'locker-management', label: 'Locker Management', icon: Settings },
     { id: 'activity-logs', label: 'Activity Logs', icon: FileText },
   ];
 

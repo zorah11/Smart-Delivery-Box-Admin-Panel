@@ -5,9 +5,24 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: '/smart-delivery-box-admin-panel/',
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      // Proxy ThingSpeak API
+      "/proxy/thingspeak": {
+        target: "https://api.thingspeak.com",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/proxy\/thingspeak/, ""),
+      },
+      // Proxy BulkSMS API
+      "/proxy/sms": {
+        target: "https://app.bulksmsug.com",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/proxy\/sms/, "/api/v1"),
+      },
+    },
   },
   plugins: [
     react(),

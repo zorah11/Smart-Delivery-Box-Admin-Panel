@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Key, RotateCcw, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, Key, RotateCcw, Clock, Loader2 } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,13 +14,16 @@ interface PINManagementProps {
 }
 
 const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
-  const { orders, currentPIN, pinHistory, generatePIN, resetPIN } = useAdmin();
+  const { orders, currentPIN, pinHistory, savePIN, resetPIN } = useAdmin();
   const { toast } = useToast();
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
+  const [phone, setPhone] = useState<string>('0774331899');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [lastError, setLastError] = useState<string>('');
 
   const pendingOrders = orders.filter(order => order.status === 'pending' || order.status === 'assigned');
 
-  const handleGeneratePIN = () => {
+  const handleGeneratePIN = async () => {
     if (!selectedOrderId) {
       toast({
         title: "No Order Selected",
@@ -28,13 +33,67 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       return;
     }
 
-    generatePIN(selectedOrderId);
-    const order = orders.find(o => o.id === selectedOrderId);
-    toast({
-      title: "PIN Generated",
-      description: `SMS sent: PIN for Order #${selectedOrderId} - ${order?.customerName}`,
-    });
+    setIsLoading(true);
+    setLastError('');
+    try {
+      const cleanedPhone = phone.replace(/\D/g, '');
+      if (!cleanedPhone) {
+        throw new Error('Phone number is required and must contain digits only (e.g., 0774331899).');
+      }
+
+      // Generate a temporary 4-digit PIN locally (do not persist yet)
+      const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
+      const order = orders.find(o => o.id === selectedOrderId);
+
+      // 1) Send to ThingSpeak
+      const tsUrl = `/proxy/thingspeak/update?api_key=EASOUN4X9X1RP73W&field1=${encodeURIComponent(pinCode)}`;
+      const tsRes = await fetch(tsUrl, { method: 'GET' });
+      const tsBody = await tsRes.text().catch(() => '<no body>');
+      if (!tsRes.ok || tsBody.trim() === '0') {
+        throw new Error(`ThingSpeak update failed (HTTP ${tsRes.status}). Response: ${tsBody}`);
+      }
+
+      // 2) Send SMS via BulkSMS
+      const smsApiKey = '0a741c4b48940d70f0a09ff088f81cdfed9c4bd65b83c0c96b8c4c382771e75e9eb6dab59dc381185bfb91d74fba740d';
+      const message = `Hello${order?.customerName ? ' ' + order.customerName : ''}, your delivery PIN is ${pinCode} for Order #${selectedOrderId}. It expires in 24 hours. Smart Delivery Box.`;
+      const smsRes = await fetch('/proxy/sms/send-sms', {
+        method: 'POST',
+        headers: {
+          'Accept': '*/*',
+          'Authorization': `Bearer ${smsApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ number: cleanedPhone, message })
+      });
+      const smsBody = await smsRes.text().catch(() => '<no body>');
+      if (!smsRes.ok) {
+        throw new Error(`SMS sending failed (HTTP ${smsRes.status}). Response: ${smsBody}`);
+      }
+
+      // Only now persist the PIN so it's displayed in Current PIN section
+      savePIN(selectedOrderId, pinCode);
+
+      toast({
+        title: 'PIN Created & Sent',
+        description: `PIN sent to ThingSpeak (entry: ${tsBody.trim()}) and SMS sent to ${cleanedPhone}.`,
+      });
+    } catch (err: any) {
+      const name = err?.name || 'Error';
+      const msg = err?.message || 'Unknown error';
+      const details = `${name}: ${msg}`;
+      setLastError(details);
+      console.error('PIN flow failed:', err);
+      toast({
+        title: `Action Failed: ${name}`,
+        description: `${msg}. This might be CORS/network related or an API error.`,
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Do not auto-generate on select to avoid confusion; only generate on button click
 
   const handleResetPIN = () => {
     resetPIN();
@@ -79,15 +138,25 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
                 ))}
               </SelectContent>
             </Select>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number (digits only)</Label>
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                placeholder="e.g., 0774331899"
+              />
+            </div>
           </CardContent>
         </Card>
 
-        {/* Current PIN */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Current PIN</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      {/* Current PIN */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Current PIN</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
             {currentPIN ? (
               <div className="space-y-3">
                 <div className="p-4 bg-primary/10 rounded-lg">
@@ -122,10 +191,19 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
           <Button 
             className="w-full"
             onClick={handleGeneratePIN}
-            disabled={!selectedOrderId}
+            disabled={!selectedOrderId || isLoading}
           >
-            <Key className="mr-2 h-4 w-4" />
-            Generate PIN
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating & Sending...
+              </>
+            ) : (
+              <>
+                <Key className="mr-2 h-4 w-4" />
+                Regenerate PIN
+              </>
+            )}
           </Button>
           <Button 
             variant="outline" 
