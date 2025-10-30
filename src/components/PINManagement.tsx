@@ -45,32 +45,27 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
       const order = orders.find(o => o.id === selectedOrderId);
 
-  // 1) Send to ThingSpeak
-  // In development we use the Vite proxy ("/proxy/thingspeak" -> https://api.thingspeak.com),
-  // but GitHub Pages is static and has no server-side proxy. Use the public ThingSpeak
-  // endpoint directly in production so the request does not 404.
-  const tsUrl = `https://api.thingspeak.com/update?api_key=EASOUN4X9X1RP73W&field1=${encodeURIComponent(pinCode)}`;
+      // 1) Send to ThingSpeak
+      const tsUrl = `https://api.thingspeak.com/update?api_key=EASOUN4X9X1RP73W&field1=${encodeURIComponent(pinCode)}`;
       const tsRes = await fetch(tsUrl, { method: 'GET' });
       const tsBody = await tsRes.text().catch(() => '<no body>');
       if (!tsRes.ok || tsBody.trim() === '0') {
         throw new Error(`ThingSpeak update failed (HTTP ${tsRes.status}). Response: ${tsBody}`);
       }
 
-      // 2) Send SMS via BulkSMS API directly
-      const smsApiKey = '0a741c4b48940d70f0a09ff088f81cdfed9c4bd65b83c0c96b8c4c382771e75e9eb6dab59dc381185bfb91d74fba740d';
+      // 2) Send SMS via BulkSMS Uganda
+      const smsApiKey = '0a741c4b48940d70f0a09ff088f81cdf7453e64a3345668abd797188d5beffcb253e6834fab8d517997c38c05fbbf7c1';
       const message = `Hello${order?.customerName ? ' ' + order.customerName : ''}, your delivery PIN is ${pinCode} for Order #${selectedOrderId}. It expires in 24 hours. Smart Delivery Box.`;
-      const smsRes = await fetch('https://api.bulksms.com/v1/messages', {
+      const smsRes = await fetch('https://app.bulksmsug.com/api/v1/send-sms', {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
+          'Accept': '*/*',
           'Authorization': `Bearer ${smsApiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
-          to: cleanedPhone,
-          body: message 
-        })
+        body: JSON.stringify({ number: cleanedPhone, message })
       });
+
       const smsBody = await smsRes.text().catch(() => '<no body>');
       if (!smsRes.ok) {
         throw new Error(`SMS sending failed (HTTP ${smsRes.status}). Response: ${smsBody}`);
