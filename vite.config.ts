@@ -5,7 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: '/smart-delivery-box-admin-panel/',
+  base: '/Smart-Delivery-Box-Admin-Panel/',
   server: {
     host: "::",
     port: 8080,
