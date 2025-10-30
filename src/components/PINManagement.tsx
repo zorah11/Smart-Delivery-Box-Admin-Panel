@@ -56,17 +56,20 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
         throw new Error(`ThingSpeak update failed (HTTP ${tsRes.status}). Response: ${tsBody}`);
       }
 
-      // 2) Send SMS via BulkSMS
+      // 2) Send SMS via BulkSMS API directly
       const smsApiKey = '0a741c4b48940d70f0a09ff088f81cdfed9c4bd65b83c0c96b8c4c382771e75e9eb6dab59dc381185bfb91d74fba740d';
       const message = `Hello${order?.customerName ? ' ' + order.customerName : ''}, your delivery PIN is ${pinCode} for Order #${selectedOrderId}. It expires in 24 hours. Smart Delivery Box.`;
-      const smsRes = await fetch('/proxy/sms/send-sms', {
+      const smsRes = await fetch('https://api.bulksms.com/v1/messages', {
         method: 'POST',
         headers: {
-          'Accept': '*/*',
+          'Accept': 'application/json',
           'Authorization': `Bearer ${smsApiKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ number: cleanedPhone, message })
+        body: JSON.stringify({ 
+          to: cleanedPhone,
+          body: message 
+        })
       });
       const smsBody = await smsRes.text().catch(() => '<no body>');
       if (!smsRes.ok) {

@@ -1,10 +1,58 @@
-# Welcome to your Lovable project
+# Smart Delivery Box Admin Panel
 
-## Project info
+A modern web-based administration panel for managing smart delivery lockers, built with React, TypeScript, and Tailwind CSS.
 
-**URL**: https://lovable.dev/projects/70587f4f-ed3e-493a-a5e9-817bf7edcde1
+## 🚀 Features
 
-## How can I edit this code?
+### 📱 PIN Management
+- Generate secure 4-digit PINs for deliveries
+- Automatic PIN delivery via SMS to customers
+- Real-time PIN synchronization with IoT lockers via ThingSpeak
+- PIN history tracking and management
+- Automatic 24-hour PIN expiration
+
+### 🔒 Locker Management
+- Real-time locker status monitoring
+- Access control and permissions
+- Occupancy tracking
+- Maintenance status updates
+
+### 📊 Activity Logs
+- Comprehensive delivery tracking
+- Usage statistics and analytics
+- Audit trail for all system activities
+- Filterable and searchable logs
+
+### 🔔 Notifications
+- Real-time system alerts
+- Delivery status updates
+- System maintenance notifications
+- Custom notification settings
+
+## 🔄 System Flow
+
+1. **Order Selection**
+   - Admin selects a pending delivery order
+   - Enters customer's phone number
+
+2. **PIN Generation & Distribution**
+   - System generates a secure 4-digit PIN
+   - PIN is sent to ThingSpeak IoT platform for locker
+   - SMS notification sent to customer with PIN
+   - PIN is stored in system with 24-hour expiry
+
+3. **Locker Access**
+   - Customer receives PIN via SMS
+   - Uses PIN to access assigned locker
+   - System tracks PIN usage and expiry
+
+4. **Monitoring & Management**
+   - Admins can view all active PINs
+   - Track delivery status and locker usage
+   - Reset PINs if needed
+   - View comprehensive activity logs
+
+## How to use this code?
 
 There are several ways of editing your application.
 
@@ -50,24 +98,52 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## What technologies are used for this project?
+## 🛠️ Technologies Used
 
-This project is built with:
+- **Frontend Framework**: React + TypeScript
+- **Build Tool**: Vite
+- **UI Components**: shadcn-ui
+- **Styling**: Tailwind CSS
+- **IoT Integration**: ThingSpeak API
+- **SMS Gateway**: BulkSMS API
+- **Hosting**: GitHub Pages
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🚀 Deployment
 
-## How can I deploy this project?
+This project is automatically deployed to GitHub Pages when changes are pushed to the main branch.
 
-Simply open [Lovable](https://lovable.dev/projects/70587f4f-ed3e-493a-a5e9-817bf7edcde1) and click on Share -> Publish.
+1. Build the project:
+   ```bash
+   npm run build
+   ```
 
-## Can I connect a custom domain to my Lovable project?
+2. Preview production build locally:
+   ```bash
+   npm run preview
+   ```
 
-Yes, you can!
+3. Push changes to GitHub:
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push origin main
+   ```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+4. GitHub Actions will automatically deploy to Pages.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 🔐 Environment Variables
+
+Create a `.env` file in the project root with:
+
+```env
+VITE_THINGSPEAK_API_KEY=your_thingspeak_key
+VITE_SMS_API_KEY=your_sms_api_key
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/YourFeature`)
+3. Commit your changes (`git commit -m 'Add YourFeature'`)
+4. Push to the branch (`git push origin feature/YourFeature`)
+5. Open a Pull Request
