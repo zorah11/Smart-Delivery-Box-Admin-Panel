@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting...</title>
+    <meta http-equiv="refresh" content="0; url=/smart-delivery-box-admin-panel/" />
+    <script>
+      // Best-effort redirect to the project base while preserving query/hash
+      (function () {
+        var base = '/smart-delivery-box-admin-panel/';
+        var query = window.location.search || '';
+        var hash = window.location.hash || '';
+        // If already under base, just reload base
+        if (window.location.pathname.indexOf(base) === 0) {
+          window.location.replace(base + query + hash);
+        } else {
+          window.location.replace(base + query + hash);
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    Redirecting...
+  </body>
+</html>
