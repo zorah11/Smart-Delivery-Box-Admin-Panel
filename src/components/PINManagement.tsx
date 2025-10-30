@@ -45,8 +45,11 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
       const order = orders.find(o => o.id === selectedOrderId);
 
-      // 1) Send to ThingSpeak
-      const tsUrl = `/proxy/thingspeak/update?api_key=EASOUN4X9X1RP73W&field1=${encodeURIComponent(pinCode)}`;
+  // 1) Send to ThingSpeak
+  // In development we use the Vite proxy ("/proxy/thingspeak" -> https://api.thingspeak.com),
+  // but GitHub Pages is static and has no server-side proxy. Use the public ThingSpeak
+  // endpoint directly in production so the request does not 404.
+  const tsUrl = `https://api.thingspeak.com/update?api_key=EASOUN4X9X1RP73W&field1=${encodeURIComponent(pinCode)}`;
       const tsRes = await fetch(tsUrl, { method: 'GET' });
       const tsBody = await tsRes.text().catch(() => '<no body>');
       if (!tsRes.ok || tsBody.trim() === '0') {
