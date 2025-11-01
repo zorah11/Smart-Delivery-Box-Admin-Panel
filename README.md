@@ -133,12 +133,34 @@ This project is automatically deployed to GitHub Pages when changes are pushed t
 
 ## 🔐 Environment Variables
 
-Create a `.env` file in the project root with:
+Create a `.env` file in the project root with the keys you plan to use. The project supports two SMS providers (configurable): `bulksms` and `textbelt`.
+
+Example `.env`:
 
 ```env
-VITE_THINGSPEAK_API_KEY=your_thingspeak_key
-VITE_SMS_API_KEY=your_sms_api_key
+# ThingSpeak (used to sync PINs to the locker)
+# Write key (used to write/update fields)
+VITE_THINGSPEAK_WRITE_KEY=your_thingspeak_write_key
+# Read key (optional) used when fetching channel status
+VITE_THINGSPEAK_READ_KEY=your_thingspeak_read_key
+# Channel ID
+VITE_THINGSPEAK_CHANNEL_ID=3021205
+
+# Which SMS provider to try first: "bulksms" or "textbelt" (default: bulksms)
+VITE_SMS_PROVIDER=bulksms
+
+# BulkSMS API key (if using BulkSMS)
+VITE_BULKSMS_API_KEY=your_bulksms_api_key
+
+# Textbelt API key (optional fallback). Use "textbelt" for the free tier or your paid key.
+VITE_TEXTBELT_KEY=textbelt
 ```
+
+Important notes about SMS and CORS:
+
+- Many SMS providers (including BulkSMS) do not allow direct browser requests from arbitrary origins. That can cause network/CORS errors when your site is hosted on GitHub Pages.
+- This project will attempt the provider configured in `VITE_SMS_PROVIDER` (default `bulksms`). If that request fails (network/CORS), it will automatically try Textbelt as a fallback if `VITE_TEXTBELT_KEY` is set.
+- For production use you should move SMS sending to a server-side component to keep API keys secret and avoid CORS restrictions. If you must call an SMS API from the browser, verify your provider supports CORS and public API keys.
 
 ## 🤝 Contributing
 

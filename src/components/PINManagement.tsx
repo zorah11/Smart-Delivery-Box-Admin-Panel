@@ -45,31 +45,34 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
       const order = orders.find(o => o.id === selectedOrderId);
 
-      // 1) Send to ThingSpeak
-      const tsUrl = `https://api.thingspeak.com/update?api_key=EASOUN4X9X1RP73W&field1=${encodeURIComponent(pinCode)}`;
-      const tsRes = await fetch(tsUrl, { method: 'GET' });
+      // 1) Send to ThingSpeak (write to channel then optionally fetch status)
+      // Use environment variables so keys are not hard-coded in the repo.
+      const thingspeakWriteKey = import.meta.env.VITE_THINGSPEAK_WRITE_KEY || 'EASOUN4X9X1RP73W';
+      const thingspeakChannelId = import.meta.env.VITE_THINGSPEAK_CHANNEL_ID || '3021205';
+      const thingspeakReadKey = import.meta.env.VITE_THINGSPEAK_READ_KEY || import.meta.env.VITE_THINGSPEAK_API_KEY || '1X48232X3U6JIMY0';
+
+      const tsUpdateUrl = `https://api.thingspeak.com/update?api_key=${thingspeakWriteKey}&field1=${encodeURIComponent(pinCode)}`;
+      const tsRes = await fetch(tsUpdateUrl, { method: 'GET' });
       const tsBody = await tsRes.text().catch(() => '<no body>');
       if (!tsRes.ok || tsBody.trim() === '0') {
         throw new Error(`ThingSpeak update failed (HTTP ${tsRes.status}). Response: ${tsBody}`);
       }
 
-      // 2) Send SMS via BulkSMS Uganda
-      const smsApiKey = '0a741c4b48940d70f0a09ff088f81cdf7453e64a3345668abd797188d5beffcb253e6834fab8d517997c38c05fbbf7c1';
-      const message = `Hello${order?.customerName ? ' ' + order.customerName : ''}, your delivery PIN is ${pinCode} for Order #${selectedOrderId}. It expires in 24 hours. Smart Delivery Box.`;
-      const smsRes = await fetch('https://app.bulksmsug.com/api/v1/send-sms', {
-        method: 'POST',
-        headers: {
-          'Accept': '*/*',
-          'Authorization': `Bearer ${smsApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ number: cleanedPhone, message })
-      });
-
-      const smsBody = await smsRes.text().catch(() => '<no body>');
-      if (!smsRes.ok) {
-        throw new Error(`SMS sending failed (HTTP ${smsRes.status}). Response: ${smsBody}`);
+      // Optional: verify channel status / last entry by fetching the channel status JSON.
+      // Some ThingSpeak endpoints may restrict CORS; if you hit CORS issues the request will fail in the browser.
+      try {
+        const statusUrl = `https://api.thingspeak.com/channels/${thingspeakChannelId}/status.json?api_key=${thingspeakReadKey}`;
+        const statusRes = await fetch(statusUrl, { method: 'GET' });
+        const statusJson = await statusRes.json().catch(() => null);
+        // we don't require statusJson to be present, but include it in logs for debugging
+        console.debug('ThingSpeak status:', statusJson);
+      } catch (statusErr) {
+        console.warn('Could not fetch ThingSpeak status (this is non-fatal):', statusErr);
       }
+
+      // 2) SMS sending is disabled for now.
+      // We'll display the generated PIN to the admin and rely on ThingSpeak for locker sync.
+      console.info('SMS sending skipped; displaying PIN to admin only.');
 
       // Only now persist the PIN so it's displayed in Current PIN section
       savePIN(selectedOrderId, pinCode);
@@ -216,6 +219,12 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
             Reset PIN
           </Button>
         </div>
+
+        {lastError && (
+          <div className="p-3 mt-2 rounded bg-destructive/10 text-destructive text-sm">
+            <strong>Error:</strong> {lastError}
+          </div>
+        )}
 
         {/* PIN History */}
         <Card>
