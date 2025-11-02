@@ -45,34 +45,24 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
       const order = orders.find(o => o.id === selectedOrderId);
 
-      // 1) Send to ThingSpeak (write to channel then optionally fetch status)
-      // Use environment variables so keys are not hard-coded in the repo.
-      const thingspeakWriteKey = import.meta.env.VITE_THINGSPEAK_WRITE_KEY || 'EASOUN4X9X1RP73W';
-      const thingspeakChannelId = import.meta.env.VITE_THINGSPEAK_CHANNEL_ID || '3021205';
-      const thingspeakReadKey = import.meta.env.VITE_THINGSPEAK_READ_KEY || import.meta.env.VITE_THINGSPEAK_API_KEY || '1X48232X3U6JIMY0';
-
-      const tsUpdateUrl = `https://api.thingspeak.com/update?api_key=${thingspeakWriteKey}&field1=${encodeURIComponent(pinCode)}`;
-      const tsRes = await fetch(tsUpdateUrl, { method: 'GET' });
-      const tsBody = await tsRes.text().catch(() => '<no body>');
-      if (!tsRes.ok || tsBody.trim() === '0') {
-        throw new Error(`ThingSpeak update failed (HTTP ${tsRes.status}). Response: ${tsBody}`);
+      // Call Netlify function to handle ThingSpeak and SMS
+      const functionUrl = '/.netlify/functions/sendPin';
+      const serverRes = await fetch(functionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: selectedOrderId,
+          pin: pinCode,
+          phone: cleanedPhone,
+        }),
+      });
+      const serverJson = await serverRes.json().catch(() => null);
+      if (!serverRes.ok || !serverJson?.success) {
+        throw new Error(serverJson?.message || `Server failed (${serverRes.status})`);
       }
-
-      // Optional: verify channel status / last entry by fetching the channel status JSON.
-      // Some ThingSpeak endpoints may restrict CORS; if you hit CORS issues the request will fail in the browser.
-      try {
-        const statusUrl = `https://api.thingspeak.com/channels/${thingspeakChannelId}/status.json?api_key=${thingspeakReadKey}`;
-        const statusRes = await fetch(statusUrl, { method: 'GET' });
-        const statusJson = await statusRes.json().catch(() => null);
-        // we don't require statusJson to be present, but include it in logs for debugging
-        console.debug('ThingSpeak status:', statusJson);
-      } catch (statusErr) {
-        console.warn('Could not fetch ThingSpeak status (this is non-fatal):', statusErr);
-      }
-
-      // 2) SMS sending is disabled for now.
-      // We'll display the generated PIN to the admin and rely on ThingSpeak for locker sync.
-      console.info('SMS sending skipped; displaying PIN to admin only.');
+      const tsBody = serverJson.thingspeakEntry;
+      console.debug('Server response:', serverJson);
+      console.info('ThingSpeak updated and SMS handled by server (if configured).');
 
       // Only now persist the PIN so it's displayed in Current PIN section
       savePIN(selectedOrderId, pinCode);
