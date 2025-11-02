@@ -20,6 +20,7 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
   const [phone, setPhone] = useState<string>('0774331899');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastError, setLastError] = useState<string>('');
+  const [lastServer, setLastServer] = useState<any>(null);
 
   const pendingOrders = orders.filter(order => order.status === 'pending' || order.status === 'assigned');
 
@@ -57,7 +58,8 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
           phone: cleanedPhone,
         }),
       });
-      const serverJson = await serverRes.json().catch(() => null);
+  const serverJson = await serverRes.json().catch(() => null);
+  setLastServer(serverJson);
       if (!serverRes.ok || !serverJson?.success) {
         throw new Error(serverJson?.message || `Server failed (${serverRes.status})`);
       }
@@ -84,7 +86,7 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
         description: `ThingSpeak entry: ${String(tsBody).trim()} ${smsStatus}`,
       });
     } catch (err: any) {
-      const name = err?.name || 'Error';
+  const name = err?.name || 'Error';
       const msg = err?.message || 'Unknown error';
       const details = `${name}: ${msg}`;
       setLastError(details);
@@ -225,6 +227,14 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
         {lastError && (
           <div className="p-3 mt-2 rounded bg-destructive/10 text-destructive text-sm">
             <strong>Error:</strong> {lastError}
+          </div>
+        )}
+        {lastServer && (
+          <div className="p-3 mt-2 rounded bg-muted/50 text-sm overflow-auto">
+            <div className="font-semibold mb-1">Last server response</div>
+            <pre className="whitespace-pre-wrap break-words text-xs">
+              {JSON.stringify(lastServer, null, 2)}
+            </pre>
           </div>
         )}
 

@@ -1,5 +1,6 @@
 exports.handler = async (event) => {
   const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+  const DEBUG = process.env.DEBUG_FUNCTIONS === '1';
 
   // CORS preflight
   if (event.httpMethod === 'OPTIONS') {
@@ -34,6 +35,12 @@ exports.handler = async (event) => {
     }
 
     const thingspeakKey = process.env.THINGSPEAK_WRITE_KEY;
+    if (DEBUG) {
+      console.log('sendPin DEBUG: env present', {
+        hasThingSpeakKey: Boolean(thingspeakKey),
+        hasBulkSMSKey: Boolean(process.env.BULKSMS_API_KEY),
+      });
+    }
     if (!thingspeakKey) {
       return {
         statusCode: 500,
@@ -44,10 +51,12 @@ exports.handler = async (event) => {
 
     // Write to ThingSpeak (GET)
     const tsUrl = `https://api.thingspeak.com/update?api_key=${encodeURIComponent(thingspeakKey)}&field1=${encodeURIComponent(pin)}`;
+    if (DEBUG) console.log('sendPin DEBUG: calling ThingSpeak', tsUrl);
     const tsRes = await fetch(tsUrl, { method: 'GET' });
     const tsText = await tsRes.text().catch(() => '<no body>');
     const tsEntry = (tsText || '').trim();
     const tsOk = tsRes.ok && tsEntry !== '0';
+    if (DEBUG) console.log('sendPin DEBUG: ThingSpeak result', { status: tsRes.status, entry: tsEntry });
     if (!tsOk) {
       return {
         statusCode: 502,
@@ -78,8 +87,10 @@ exports.handler = async (event) => {
         let smsJson = null;
         try { smsJson = JSON.parse(smsBodyText); } catch {}
         sms = { ok: smsRes.ok, status: smsRes.status, body: smsJson ?? smsBodyText };
+        if (DEBUG) console.log('sendPin DEBUG: BulkSMS result', { status: smsRes.status, ok: smsRes.ok });
       } catch (e) {
         sms = { ok: false, error: String(e) };
+        if (DEBUG) console.log('sendPin DEBUG: BulkSMS error', { error: String(e) });
       }
     }
 

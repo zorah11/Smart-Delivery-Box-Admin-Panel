@@ -1,0 +1,17 @@
+# Netlify configuration for Smart-Delivery-Box-Admin-Panel
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[build.environment]
+  # Ensure Node 18 so native fetch is available in functions/runtime
+  NODE_VERSION = "18"
+
+[dev]
+  framework = "vite"
+  command = "npm run dev"
