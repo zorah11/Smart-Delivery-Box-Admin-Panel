@@ -45,6 +45,10 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       // Generate a temporary 4-digit PIN locally (do not persist yet)
       const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
       const order = orders.find(o => o.id === selectedOrderId);
+      
+      if (!order) {
+        throw new Error('Order not found');
+      }
 
   // Call Netlify function to handle ThingSpeak and SMS
   // Frontend is hosted on Netlify, so a relative path works.
@@ -58,6 +62,8 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
           orderId: selectedOrderId,
           pin: pinCode,
           phone: cleanedPhone,
+          customerName: order.customerName,
+          orderDescription: order.description,
         }),
       });
       console.log('🔵 Response status:', serverRes.status, serverRes.statusText);
