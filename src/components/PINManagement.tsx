@@ -61,9 +61,18 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       if (!serverRes.ok || !serverJson?.success) {
         throw new Error(serverJson?.message || `Server failed (${serverRes.status})`);
       }
-  const tsBody = serverJson.thingspeakEntry;
-  const smsOk = !!serverJson.sms?.ok;
-  const smsStatus = smsOk ? `and SMS sent to ${cleanedPhone}` : '(SMS not sent or not configured)';
+      // Validate ThingSpeak write from server response
+      const tsOk: boolean = !!serverJson.ts?.ok;
+      const tsEntry: string = String(serverJson.ts?.entry ?? serverJson.thingspeakEntry ?? '').trim();
+      if (!tsOk || !tsEntry || tsEntry === '0') {
+        const tsStatus = serverJson.ts?.status;
+        const tsUrl = serverJson.ts?.url;
+        throw new Error(`ThingSpeak write failed or returned 0 (status ${tsStatus}). URL: ${tsUrl}`);
+      }
+      const tsBody = tsEntry;
+      // Determine SMS result (optional)
+      const smsOk = !!serverJson.sms?.ok;
+      const smsStatus = smsOk ? `and SMS sent to ${cleanedPhone}` : '(SMS not sent or not configured)';
       console.debug('Server response:', serverJson);
       console.info('ThingSpeak updated and SMS handled by server (if configured).');
 

@@ -18,7 +18,7 @@ exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
       return {
         statusCode: 405,
-        headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+        headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Method Not Allowed' }),
       };
     }
@@ -28,7 +28,7 @@ exports.handler = async (event) => {
     if (!orderId || !pin) {
       return {
         statusCode: 400,
-        headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+        headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'orderId and pin are required' }),
       };
     }
@@ -37,7 +37,7 @@ exports.handler = async (event) => {
     if (!thingspeakKey) {
       return {
         statusCode: 500,
-        headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+        headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'ThingSpeak key not configured' }),
       };
     }
@@ -46,11 +46,17 @@ exports.handler = async (event) => {
     const tsUrl = `https://api.thingspeak.com/update?api_key=${encodeURIComponent(thingspeakKey)}&field1=${encodeURIComponent(pin)}`;
     const tsRes = await fetch(tsUrl, { method: 'GET' });
     const tsText = await tsRes.text().catch(() => '<no body>');
-    if (!tsRes.ok || tsText.trim() === '0') {
+    const tsEntry = (tsText || '').trim();
+    const tsOk = tsRes.ok && tsEntry !== '0';
+    if (!tsOk) {
       return {
         statusCode: 502,
-        headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
-        body: JSON.stringify({ message: 'ThingSpeak update failed', details: tsText }),
+        headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'ThingSpeak update failed',
+          details: tsText,
+          ts: { ok: false, status: tsRes.status, entry: tsEntry, url: tsUrl },
+        }),
       };
     }
 
@@ -68,8 +74,10 @@ exports.handler = async (event) => {
           },
           body: JSON.stringify({ number: phone, message: `Your delivery PIN is ${pin}` }),
         });
-        const smsJson = await smsRes.json().catch(() => null);
-        sms = { ok: smsRes.ok, status: smsRes.status, body: smsJson };
+        const smsBodyText = await smsRes.text().catch(() => '<no body>');
+        let smsJson = null;
+        try { smsJson = JSON.parse(smsBodyText); } catch {}
+        sms = { ok: smsRes.ok, status: smsRes.status, body: smsJson ?? smsBodyText };
       } catch (e) {
         sms = { ok: false, error: String(e) };
       }
@@ -78,13 +86,18 @@ exports.handler = async (event) => {
     return {
       statusCode: 200,
       headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ success: true, thingspeakEntry: tsText.trim(), sms }),
+      body: JSON.stringify({
+        success: true,
+        ts: { ok: tsOk, status: tsRes.status, entry: tsEntry, url: tsUrl },
+        thingspeakEntry: tsEntry,
+        sms,
+      }),
     };
   } catch (err) {
     console.error('sendPin error:', err);
     return {
       statusCode: 500,
-      headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN },
+      headers: { 'Access-Control-Allow-Origin': ALLOWED_ORIGIN, 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: err?.message || 'Server error' }),
     };
   }
