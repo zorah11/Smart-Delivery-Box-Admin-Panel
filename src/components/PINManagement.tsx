@@ -49,6 +49,8 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
   // Call Netlify function to handle ThingSpeak and SMS
   // Frontend is hosted on Netlify, so a relative path works.
   const functionUrl = '/.netlify/functions/sendPin';
+      console.log('🔵 Calling Netlify function:', functionUrl);
+      console.log('🔵 Request body:', { orderId: selectedOrderId, pin: pinCode, phone: cleanedPhone });
       const serverRes = await fetch(functionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -58,6 +60,8 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
           phone: cleanedPhone,
         }),
       });
+      console.log('🔵 Response status:', serverRes.status, serverRes.statusText);
+      console.log('🔵 Response headers:', Object.fromEntries(serverRes.headers.entries()));
   const serverJson = await serverRes.json().catch(() => null);
   setLastServer(serverJson);
       if (!serverRes.ok || !serverJson?.success) {
