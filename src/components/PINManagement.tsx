@@ -46,10 +46,8 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       const order = orders.find(o => o.id === selectedOrderId);
 
   // Call Netlify function to handle ThingSpeak and SMS
-  // If you're hosting the frontend on GitHub Pages, set VITE_FUNCTION_BASE
-  // to your Netlify site origin (e.g., https://your-site.netlify.app)
-  const fnBase = (import.meta.env as any).VITE_FUNCTION_BASE || '';
-  const functionUrl = `${fnBase}/.netlify/functions/sendPin`;
+  // Frontend is hosted on Netlify, so a relative path works.
+  const functionUrl = '/.netlify/functions/sendPin';
       const serverRes = await fetch(functionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
