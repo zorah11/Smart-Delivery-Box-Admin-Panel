@@ -74,6 +74,13 @@ exports.handler = async (event) => {
     const bulksmsKey = process.env.BULKSMS_API_KEY;
     if (phone && bulksmsKey) {
       try {
+        // Convert phone to international format if it starts with 0
+        let formattedPhone = phone;
+        if (phone.startsWith('0')) {
+          formattedPhone = '256' + phone.substring(1); // Uganda country code
+        }
+        if (DEBUG) console.log('sendPin DEBUG: SMS phone format', { original: phone, formatted: formattedPhone });
+        
         const smsRes = await fetch('https://app.bulksmsug.com/api/v1/send-sms', {
           method: 'POST',
           headers: {
@@ -81,7 +88,7 @@ exports.handler = async (event) => {
             Authorization: `Bearer ${bulksmsKey}`,
             Accept: '*/*',
           },
-          body: JSON.stringify({ number: phone, message: `Your delivery PIN is ${pin}` }),
+          body: JSON.stringify({ number: formattedPhone, message: `Your delivery PIN is ${pin}` }),
         });
         const smsBodyText = await smsRes.text().catch(() => '<no body>');
         let smsJson = null;

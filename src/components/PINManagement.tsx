@@ -63,6 +63,7 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       console.log('🔵 Response status:', serverRes.status, serverRes.statusText);
       console.log('🔵 Response headers:', Object.fromEntries(serverRes.headers.entries()));
   const serverJson = await serverRes.json().catch(() => null);
+      console.log('🔵 Response body (serverJson):', serverJson);
   setLastServer(serverJson);
       if (!serverRes.ok || !serverJson?.success) {
         throw new Error(serverJson?.message || `Server failed (${serverRes.status})`);
