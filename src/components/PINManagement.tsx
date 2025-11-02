@@ -45,8 +45,11 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       const pinCode = Math.floor(1000 + Math.random() * 9000).toString();
       const order = orders.find(o => o.id === selectedOrderId);
 
-      // Call Netlify function to handle ThingSpeak and SMS
-      const functionUrl = '/.netlify/functions/sendPin';
+  // Call Netlify function to handle ThingSpeak and SMS
+  // If you're hosting the frontend on GitHub Pages, set VITE_FUNCTION_BASE
+  // to your Netlify site origin (e.g., https://your-site.netlify.app)
+  const fnBase = (import.meta.env as any).VITE_FUNCTION_BASE || '';
+  const functionUrl = `${fnBase}/.netlify/functions/sendPin`;
       const serverRes = await fetch(functionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,7 +63,9 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       if (!serverRes.ok || !serverJson?.success) {
         throw new Error(serverJson?.message || `Server failed (${serverRes.status})`);
       }
-      const tsBody = serverJson.thingspeakEntry;
+  const tsBody = serverJson.thingspeakEntry;
+  const smsOk = !!serverJson.sms?.ok;
+  const smsStatus = smsOk ? `and SMS sent to ${cleanedPhone}` : '(SMS not sent or not configured)';
       console.debug('Server response:', serverJson);
       console.info('ThingSpeak updated and SMS handled by server (if configured).');
 
@@ -68,8 +73,8 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
       savePIN(selectedOrderId, pinCode);
 
       toast({
-        title: 'PIN Created & Sent',
-        description: `PIN sent to ThingSpeak (entry: ${tsBody.trim()}) and SMS sent to ${cleanedPhone}.`,
+        title: 'PIN Created',
+        description: `ThingSpeak entry: ${String(tsBody).trim()} ${smsStatus}`,
       });
     } catch (err: any) {
       const name = err?.name || 'Error';
