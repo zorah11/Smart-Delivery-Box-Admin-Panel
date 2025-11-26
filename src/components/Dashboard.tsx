@@ -66,12 +66,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Delivered</p>
+                  <p className="text-sm font-medium text-muted-foreground">Pending Orders</p>
                   <p className="text-3xl font-bold text-foreground">
-                    {orders.filter(o => o.status === 'delivered').length}
+                    {orders.filter(o => o.status === 'pending').length}
                   </p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-success" />
+                <Clock className="h-8 w-8 text-success" />
               </div>
             </CardContent>
           </Card>
@@ -83,7 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <p className="text-sm font-medium text-muted-foreground">Active PINs</p>
                   <p className="text-3xl font-bold text-foreground">3</p>
                 </div>
-                <Shield className="h-8 w-8 text-accent" />
+                <Key className="h-8 w-8 text-accent" />
               </div>
             </CardContent>
           </Card>

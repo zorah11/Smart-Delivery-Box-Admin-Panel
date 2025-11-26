@@ -17,12 +17,21 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
   const { orders, currentPIN, pinHistory, savePIN, resetPIN } = useAdmin();
   const { toast } = useToast();
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
-  const [phone, setPhone] = useState<string>('0774331899');
+  const [phone, setPhone] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [lastError, setLastError] = useState<string>('');
   const [lastServer, setLastServer] = useState<any>(null);
 
-  const pendingOrders = orders.filter(order => order.status === 'pending' || order.status === 'assigned');
+  const pendingOrders = orders.filter(order => order.status === 'pending');
+
+  // Auto-fill phone number when order is selected
+  const handleOrderSelect = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    const order = orders.find(o => o.id === orderId);
+    if (order?.customerPhone) {
+      setPhone(order.customerPhone.replace(/\D/g, ''));
+    }
+  };
 
   const handleGeneratePIN = async () => {
     if (!selectedOrderId) {
@@ -145,7 +154,7 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
             <CardTitle className="text-lg font-semibold">Select Order</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Select value={selectedOrderId} onValueChange={setSelectedOrderId}>
+            <Select value={selectedOrderId} onValueChange={handleOrderSelect}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose an order to generate PIN" />
               </SelectTrigger>

@@ -55,7 +55,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ onNavigate }) => {
     customerEmail: '',
     description: '',
     trackingNumber: '',
-    status: 'pending' as 'pending' | 'assigned' | 'delivered',
+    status: 'pending' as 'pending',
   });
 
   const resetForm = () => {
@@ -64,9 +64,16 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ onNavigate }) => {
       customerPhone: '',
       customerEmail: '',
       description: '',
-      trackingNumber: '',
+      trackingNumber: generateTrackingNumber(),
       status: 'pending',
     });
+  };
+
+  const generateTrackingNumber = () => {
+    const prefix = 'TRK';
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `${prefix}${timestamp}${random}`;
   };
 
   const handleAddOrder = () => {
@@ -79,7 +86,13 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ onNavigate }) => {
       return;
     }
 
-    addOrder(formData);
+    // Ensure tracking number is generated
+    const orderData = {
+      ...formData,
+      trackingNumber: formData.trackingNumber || generateTrackingNumber(),
+    };
+
+    addOrder(orderData);
     toast({
       title: "Order Added",
       description: `Order for ${formData.customerName} has been created successfully.`,
@@ -156,10 +169,6 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ onNavigate }) => {
     switch (status) {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'assigned':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'delivered':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }
@@ -214,8 +223,6 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ onNavigate }) => {
                 <SelectContent>
                   <SelectItem value="all">All Orders</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="assigned">Assigned</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -300,8 +307,13 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ onNavigate }) => {
       </main>
 
       {/* Add Order Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+        setIsAddDialogOpen(open);
+        if (open && !formData.trackingNumber) {
+          setFormData({ ...formData, trackingNumber: generateTrackingNumber() });
+        }
+      }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Order</DialogTitle>
             <DialogDescription>
@@ -347,29 +359,13 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ onNavigate }) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="trackingNumber">Tracking Number</Label>
+              <Label htmlFor="trackingNumber">Tracking Number (Auto-generated)</Label>
               <Input
                 id="trackingNumber"
-                placeholder="TRK123456789"
                 value={formData.trackingNumber}
-                onChange={(e) => setFormData({ ...formData, trackingNumber: e.target.value })}
+                disabled
+                className="bg-muted"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Order Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: any) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="assigned">Assigned</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>
@@ -386,7 +382,7 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ onNavigate }) => {
 
       {/* Edit Order Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Order</DialogTitle>
             <DialogDescription>
@@ -435,26 +431,10 @@ const OrderManagement: React.FC<OrderManagementProps> = ({ onNavigate }) => {
               <Label htmlFor="edit-trackingNumber">Tracking Number</Label>
               <Input
                 id="edit-trackingNumber"
-                placeholder="TRK123456789"
                 value={formData.trackingNumber}
-                onChange={(e) => setFormData({ ...formData, trackingNumber: e.target.value })}
+                disabled
+                className="bg-muted"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-status">Order Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value: any) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger id="edit-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="assigned">Assigned</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>

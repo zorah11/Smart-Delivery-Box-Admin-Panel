@@ -6,8 +6,8 @@ interface Order {
   customerPhone?: string;
   customerEmail?: string;
   description: string;
-  trackingNumber?: string;
-  status: 'pending' | 'assigned' | 'delivered';
+  trackingNumber: string;
+  status: 'pending';
   createdAt?: Date;
 }
 
@@ -83,7 +83,8 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
         id: '123', 
         customerName: 'Abdul Swabul', 
         customerPhone: '0774331899',
-        description: 'Electronics', 
+        description: 'Electronics',
+        trackingNumber: 'TRK123456001',
         status: 'pending',
         createdAt: new Date()
       }
@@ -226,9 +227,17 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   };
 
   const addOrder = (orderData: Omit<Order, 'id' | 'createdAt'>) => {
+    const generateTrackingNumber = () => {
+      const prefix = 'TRK';
+      const timestamp = Date.now().toString().slice(-8);
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      return `${prefix}${timestamp}${random}`;
+    };
+
     const newOrder: Order = {
       ...orderData,
       id: Date.now().toString(),
+      trackingNumber: orderData.trackingNumber || generateTrackingNumber(),
       createdAt: new Date(),
     };
 
