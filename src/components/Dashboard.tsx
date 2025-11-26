@@ -107,6 +107,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <Key className="mr-2 h-4 w-4" />
                   Generate PIN
                 </Button>
+                <Button 
+                  className="w-full h-12"
+                  variant="outline"
+                  onClick={() => onNavigate('order-management')}
+                >
+                  <Package className="mr-2 h-4 w-4" />
+                  Manage Orders
+                </Button>
               </div>
             </CardContent>
           </Card>

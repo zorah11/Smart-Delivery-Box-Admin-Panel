@@ -7,7 +7,8 @@ import {
   Lock, 
   Bell, 
   FileText, 
-  LogOut 
+  LogOut,
+  Package
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -21,6 +22,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onNavigate }) => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'order-management', label: 'Order Management', icon: Package },
     { id: 'pin-management', label: 'PIN Management', icon: Lock },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'activity-logs', label: 'Activity Logs', icon: FileText },

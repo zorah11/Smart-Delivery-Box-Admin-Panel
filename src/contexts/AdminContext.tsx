@@ -3,8 +3,12 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 interface Order {
   id: string;
   customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
   description: string;
+  trackingNumber?: string;
   status: 'pending' | 'assigned' | 'delivered';
+  createdAt?: Date;
 }
 
 interface PIN {
@@ -40,6 +44,9 @@ interface AdminContextType {
   generatePIN: (orderId: string) => PIN;
   savePIN: (orderId: string, code: string) => PIN;
   resetPIN: () => void;
+  addOrder: (orderData: Omit<Order, 'id' | 'createdAt'>) => void;
+  updateOrder: (orderId: string, orderData: Partial<Order>) => void;
+  deleteOrder: (orderId: string) => void;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -57,10 +64,33 @@ interface AdminProviderProps {
 }
 
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
-  // Mock data
-  const [orders] = useState<Order[]>([
-    { id: '123', customerName: 'Abdul Swabul', description: 'Electronics', status: 'pending' }
-  ]);
+  // Load orders from localStorage or use default
+  const loadOrders = (): Order[] => {
+    try {
+      const stored = localStorage.getItem('orders');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed.map((order: any) => ({
+          ...order,
+          createdAt: order.createdAt ? new Date(order.createdAt) : new Date(),
+        }));
+      }
+    } catch (e) {
+      console.error('Failed to load orders from localStorage:', e);
+    }
+    return [
+      { 
+        id: '123', 
+        customerName: 'Abdul Swabul', 
+        customerPhone: '0774331899',
+        description: 'Electronics', 
+        status: 'pending',
+        createdAt: new Date()
+      }
+    ];
+  };
+
+  const [orders, setOrders] = useState<Order[]>(loadOrders());
 
   const [currentPIN, setCurrentPIN] = useState<PIN | null>(null);
   const [pinHistory, setPinHistory] = useState<PIN[]>([]);
@@ -195,6 +225,105 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     }
   };
 
+  const addOrder = (orderData: Omit<Order, 'id' | 'createdAt'>) => {
+    const newOrder: Order = {
+      ...orderData,
+      id: Date.now().toString(),
+      createdAt: new Date(),
+    };
+
+    const updatedOrders = [...orders, newOrder];
+    setOrders(updatedOrders);
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('orders', JSON.stringify(updatedOrders.map(order => ({
+        ...order,
+        createdAt: order.createdAt?.toISOString(),
+      }))));
+    } catch (e) {
+      console.error('Failed to save orders to localStorage:', e);
+    }
+
+    // Add activity log
+    const logEntry: ActivityLog = {
+      id: Date.now().toString(),
+      action: 'Order Created',
+      orderId: newOrder.id,
+      timestamp: new Date(),
+      details: `Order #${newOrder.id} created for ${newOrder.customerName} - ${newOrder.description}`,
+    };
+    setActivityLogs(prev => [logEntry, ...prev]);
+
+    // Add notification
+    const notification: Notification = {
+      id: Date.now().toString(),
+      type: 'delivery',
+      message: `New order created for ${newOrder.customerName}`,
+      timestamp: new Date(),
+      critical: false,
+    };
+    setNotifications(prev => [notification, ...prev]);
+  };
+
+  const updateOrder = (orderId: string, orderData: Partial<Order>) => {
+    const updatedOrders = orders.map(order =>
+      order.id === orderId ? { ...order, ...orderData } : order
+    );
+    setOrders(updatedOrders);
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('orders', JSON.stringify(updatedOrders.map(order => ({
+        ...order,
+        createdAt: order.createdAt?.toISOString(),
+      }))));
+    } catch (e) {
+      console.error('Failed to save orders to localStorage:', e);
+    }
+
+    // Add activity log
+    const order = updatedOrders.find(o => o.id === orderId);
+    if (order) {
+      const logEntry: ActivityLog = {
+        id: Date.now().toString(),
+        action: 'Order Updated',
+        orderId: order.id,
+        timestamp: new Date(),
+        details: `Order #${order.id} updated for ${order.customerName}`,
+      };
+      setActivityLogs(prev => [logEntry, ...prev]);
+    }
+  };
+
+  const deleteOrder = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    const updatedOrders = orders.filter(o => o.id !== orderId);
+    setOrders(updatedOrders);
+
+    // Save to localStorage
+    try {
+      localStorage.setItem('orders', JSON.stringify(updatedOrders.map(order => ({
+        ...order,
+        createdAt: order.createdAt?.toISOString(),
+      }))));
+    } catch (e) {
+      console.error('Failed to save orders to localStorage:', e);
+    }
+
+    // Add activity log
+    if (order) {
+      const logEntry: ActivityLog = {
+        id: Date.now().toString(),
+        action: 'Order Deleted',
+        orderId: orderId,
+        timestamp: new Date(),
+        details: `Order #${orderId} for ${order.customerName} was deleted`,
+      };
+      setActivityLogs(prev => [logEntry, ...prev]);
+    }
+  };
+
   const value = {
     orders,
     currentPIN,
@@ -204,6 +333,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     generatePIN,
     savePIN,
     resetPIN,
+    addOrder,
+    updateOrder,
+    deleteOrder,
   };
 
   return (

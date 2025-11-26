@@ -153,6 +153,7 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
                 {pendingOrders.map((order) => (
                   <SelectItem key={order.id} value={order.id}>
                     Order #{order.id}: {order.customerName} - {order.description}
+                    {order.customerPhone && ` (${order.customerPhone})`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -163,9 +164,31 @@ const PINManagement: React.FC<PINManagementProps> = ({ onNavigate }) => {
               <Input
                 id="phone"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => {
+                  const newPhone = e.target.value.replace(/\D/g, '');
+                  setPhone(newPhone);
+                }}
                 placeholder="e.g., 0774331899"
               />
+              {selectedOrderId && (() => {
+                const order = orders.find(o => o.id === selectedOrderId);
+                if (order?.customerPhone && order.customerPhone !== phone) {
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      Customer's saved phone: {order.customerPhone}
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 ml-2 text-xs"
+                        onClick={() => setPhone(order.customerPhone || '')}
+                      >
+                        Use this
+                      </Button>
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </CardContent>
         </Card>
